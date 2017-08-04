@@ -53,6 +53,9 @@ prompts but I prefer this tradeoff rather than having the suid wrapper
 lying around suid root on the system.
 
 
+Neither this patch nor it's developer are in any way associated with
+Hashicorp.
+
 Use at your own risk!
 
 
