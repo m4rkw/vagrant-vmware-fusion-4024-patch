@@ -87,6 +87,14 @@ EOF
     echo "export PATH=~/bin:\$PATH" >> ~/.bash_profile
   fi
 
+	vuln=`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64`
+	if [ "$vuln" != "" ] ; then
+		cp $vuln $vuln.bak
+		rm -f $vuln
+		mv $vuln.bak $vuln
+		chmod 755 $vuln
+	fi
+
   echo "Patch installed."
 else
   if [ -e ~/bin/vagrant ] ; then
