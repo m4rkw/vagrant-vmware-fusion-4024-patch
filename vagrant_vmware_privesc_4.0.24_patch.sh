@@ -56,7 +56,7 @@ if [ "$version" != "4.0.24" ] ; then
 fi
 
 if [ "$1" == "-i" ] ; then
-	if [ -e ~/bin/vagrant ] ; then
+  if [ -e ~/bin/vagrant ] ; then
     echo "Patch already installed."
     exit 0
   fi
@@ -87,13 +87,13 @@ EOF
     echo "export PATH=~/bin:\$PATH" >> ~/.bash_profile
   fi
 
-	vuln=`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64`
-	if [ "$vuln" != "" ] ; then
-		cp $vuln $vuln.bak
-		rm -f $vuln
-		mv $vuln.bak $vuln
-		chmod 755 $vuln
-	fi
+  vuln=`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64`
+  if [ "$vuln" != "" ] ; then
+    cp $vuln $vuln.bak
+    rm -f $vuln
+    mv $vuln.bak $vuln
+    chmod 755 $vuln
+  fi
 
   echo "Patch installed."
 else
