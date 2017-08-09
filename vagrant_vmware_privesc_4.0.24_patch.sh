@@ -71,7 +71,7 @@ if [ "$1" == "-i" ] ; then
 #!/bin/bash
 /usr/local/bin/vagrant \$@
 
-vuln=`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64`
+vuln=\`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64\`
 if [ "\$vuln" != "" ] ; then
   cp \$vuln \$vuln.bak
   rm -f \$vuln
