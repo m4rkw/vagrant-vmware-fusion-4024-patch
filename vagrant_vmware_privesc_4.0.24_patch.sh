@@ -3,9 +3,8 @@ echo
 echo "Exploit mitigation patch for vagrant-vmware-fusion 4.0.24"
 echo "by m4rkw"
 echo
-echo "When installed vagrant will prompt multiple times for credentials when"
-echo "it needs them, but there will be no potentially vulnerable suid root"
-echo "binary lying around on the system."
+echo "When installed the vulnerable binary will be stripped of it's suid flag"
+echo "after vagrant is run."
 echo
 echo "For full details please see:"
 echo "https://github.com/m4rkw/vagrant-vmware-fusion-4024-patch"
@@ -56,106 +55,42 @@ if [ "$version" != "4.0.24" ] ; then
   exit 1
 fi
 
-plugin_dir=`find ~/.vagrant.d -type d -name vagrant-vmware-fusion-4.0.24`
-
-if [ $plugin_dir == "" ] ; then
-  echo "Plugin directory not found."
-  exit 1
-fi
-
-wrapper="$plugin_dir/bin/vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64"
-
-if [ ! -e "$wrapper" ] ; then
-  echo "wrapper binary not found at: $wrapper"
-  exit 1
-fi
-
 if [ "$1" == "-i" ] ; then
-  if [ ! -e "$wrapper.bin" ] ; then
-    cp $wrapper $wrapper.bin
+	if [ -e ~/bin/vagrant ] ; then
+    echo "Patch already installed."
+    exit 0
   fi
 
-  rm -f $wrapper
+  if [ ! -e ~/bin ] ; then
+    mkdir ~/bin
+  fi
 
-  cat > /tmp/vagrant_vmware_4.0.24_patch.c <<EOF
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <libproc.h>
-#include <unistd.h>
+  vagrant_path=`which vagrant`
 
-int main (int ac, char *av[])
-{
-    int i, ret;
-    pid_t pid;
-    char path[PROC_PIDPATHINFO_MAXSIZE];
-    char *p[ac+1];
-    char buffer[2048];
+  cat >> ~/bin/vagrant <<EOF
+#!/bin/bash
+/usr/local/bin/vagrant \$@
 
-    pid = getpid();
-    ret = proc_pidpath (pid, path, sizeof(path));
-
-    if ( ret <= 0 ) {
-      fprintf(stderr, "%s\n", strerror(errno));
-      return 1;
-    }
-
-    for (i = strlen(path)-1; i >= 0; i--) {
-      if (path[i] == '/') {
-        path[i] = 0;
-        break;
-      }
-    }
-
-    chdir(path);
-
-    for (i=1; i<ac; i++) {
-      p[i] = av[i];
-    }
-
-    p[ac] = NULL;
-
-    setuid(0);
-
-    if (seteuid(0) != 0) {
-      system("/usr/bin/osascript -e \\"do shell script \\\\\"chown root:wheel ./vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64\nchmod 4755 ./vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64\\\\\" with administrator privileges\\"");
-
-      p[0] = "vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64";
-      execvp("./vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64", p);
-    } else {
-      snprintf((char *)&buffer, sizeof(buffer), "%s/vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64", path);
-      chmod(buffer, 0755);
-
-      p[0] = "vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64.bin";
-      execvp("./vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64.bin", p);
-    }
-
-    return 0;
-}
+vuln=`find ~/.vagrant.d -perm +4000 -name vagrant_vmware_desktop_sudo_helper_wrapper_darwin_amd64`
+if [ "\$vuln" != "" ] ; then
+  cp \$vuln \$vuln.bak
+  rm -f \$vuln
+  mv \$vuln.bak \$vuln
+  chmod 755 \$vuln
+fi
 EOF
-  clang -o $wrapper /tmp/vagrant_vmware_4.0.24_patch.c
+  chmod 755 ~/bin/vagrant
 
-  if [ ! $? -eq 0 ] ; then
-    echo "Compilation failed, check xcode and the commandline tools are installed."
+  new_vagrant_path=`which vagrant`
 
-    rm -f /tmp/vagrant_vmware_4.0.24_patch.c
-    exit 1
+  if [ "$new_vagrant_path" == "$vagrant_path" ] ; then
+    echo "export PATH=~/bin:\$PATH" >> ~/.bash_profile
   fi
-  rm -f /tmp/vagrant_vmware_4.0.24_patch.c
 
   echo "Patch installed."
-  echo
 else
-	if [ ! -e "$wrapper.bin" ] ; then
-    echo "Patch doesn't seem to be installed."
-    exit 1
+  if [ -e ~/bin/vagrant ] ; then
+    rm -f ~/bin/vagrant
+    echo "Patch uninstalled."
   fi
-
-  rm -f $wrapper
-  cp "$wrapper.bin" $wrapper
-  rm -f "$wrapper.bin"
-
-  echo "Patch uninstalled"
-  echo
 fi
